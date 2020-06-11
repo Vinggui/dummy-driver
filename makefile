@@ -4,4 +4,4 @@ install:
 	@go build main.go
 
 run:
-	@./main $(token)
+	@./main $(TOKEN)
