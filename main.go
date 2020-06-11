@@ -54,7 +54,7 @@ func createDevice() *pb.Device {
 func makeLog(msg string, log pb.LoggerClient) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	_, err := log.Error(ctx, &pb.LogRequest{
+	_, err := log.Info(ctx, &pb.LogRequest{
 		Credential: &pb.Credential{
 			DriverID: selfID,
 			Token:    token,
@@ -165,30 +165,28 @@ func confirm(center pb.CenterAPIClient, input *pb.InputCommand) {
 }
 
 func poll(center pb.CenterAPIClient) {
-	for {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-		defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
 
-		r, err := center.PollRequest(ctx, &pb.Credential{
-			DriverID: selfID,
-			Token:    token,
-		})
+	r, err := center.PollRequest(ctx, &pb.Credential{
+		DriverID: selfID,
+		Token:    token,
+	})
+	if err != nil {
+		panic(err)
+	}
+	for {
+		command, err := r.Recv()
+		if err == io.EOF ||
+			ctx.Err() == context.DeadlineExceeded {
+			log.Println("retartarting")
+			break
+		}
 		if err != nil {
-			panic(err)
+			log.Fatalf("%v.ListFeatures(_) = _, %v", center, err)
 		}
-		for {
-			command, err := r.Recv()
-			if err == io.EOF ||
-				ctx.Err() == context.DeadlineExceeded {
-				log.Println("retartarting")
-				break
-			}
-			if err != nil {
-				log.Fatalf("%v.ListFeatures(_) = _, %v", center, err)
-			}
-			confirm(center, command.Input)
-			// log.Println(command)
-		}
+		confirm(center, command.Input)
+		// log.Println(command)
 	}
 }
 
