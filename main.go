@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"time"
 
 	pb "github.com/Vinggui/iaut-drivers/go-driver/internal/driverpc"
@@ -15,6 +16,10 @@ import (
 const (
 	address     = "localhost:50051"
 	defaultName = "world"
+)
+
+var (
+	token []byte
 )
 
 func createDevice() *pb.Device {
@@ -34,7 +39,7 @@ func createDevice() *pb.Device {
 	device := &pb.Device{
 		Credential: &pb.Credential{
 			DriverID: []byte("PMbNixmFx87HsVHS6iAz"),
-			Token:    []byte("123"),
+			Token:    token,
 		},
 		Code:    []byte("sensor"),
 		Address: []byte("127.0.0.1:8080"),
@@ -50,7 +55,7 @@ func makeLog(ctx context.Context, log pb.LoggerClient) {
 	r, err := log.Error(ctx, &pb.LogRequest{
 		Credential: &pb.Credential{
 			DriverID: []byte("teste"),
-			Token:    []byte("123"),
+			Token:    token,
 		},
 		Message: "UHUUUUl",
 	})
@@ -81,7 +86,7 @@ func report(center pb.CenterAPIClient) {
 	r, err := center.Report(ctx, &pb.ReportMessage{
 		Credential: &pb.Credential{
 			DriverID: []byte("PMbNixmFx87HsVHS6iAz"),
-			Token:    []byte("123"),
+			Token:    token,
 		},
 		DeviceCode: []byte("sensor"),
 		OutputCode: []byte("out42"),
@@ -100,7 +105,7 @@ func getDevs(center pb.CenterAPIClient) {
 	// Get Devices
 	r, err := center.GetDevices(ctx, &pb.Credential{
 		DriverID: []byte("PMbNixmFx87HsVHS6iAz"),
-		Token:    []byte("123"),
+		Token:    token,
 	})
 	if err != nil {
 		panic(err)
@@ -124,7 +129,7 @@ func delDev(center pb.CenterAPIClient) {
 	device := &pb.Device{
 		Credential: &pb.Credential{
 			DriverID: []byte("PMbNixmFx87HsVHS6iAz"),
-			Token:    []byte("123"),
+			Token:    token,
 		},
 		Code: []byte("sensor"),
 	}
@@ -144,7 +149,7 @@ func confirm(center pb.CenterAPIClient, input *pb.InputCommand) {
 	conf := &pb.Confirmation{
 		Credential: &pb.Credential{
 			DriverID: []byte("PMbNixmFx87HsVHS6iAz"),
-			Token:    []byte("123"),
+			Token:    token,
 		},
 		Input: input,
 	}
@@ -163,7 +168,7 @@ func poll(center pb.CenterAPIClient) {
 
 		r, err := center.PollRequest(ctx, &pb.Credential{
 			DriverID: []byte("PMbNixmFx87HsVHS6iAz"),
-			Token:    []byte("123"),
+			Token:    token,
 		})
 		if err != nil {
 			panic(err)
@@ -185,6 +190,7 @@ func poll(center pb.CenterAPIClient) {
 }
 
 func main() {
+	token = []byte(os.Args[1])
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
