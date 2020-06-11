@@ -18,7 +18,8 @@ const (
 )
 
 var (
-	token []byte
+	token  []byte
+	selfID []byte
 )
 
 func createDevice() *pb.Device {
@@ -37,7 +38,7 @@ func createDevice() *pb.Device {
 	}
 	device := &pb.Device{
 		Credential: &pb.Credential{
-			DriverID: []byte("PMbNixmFx87HsVHS6iAz"),
+			DriverID: selfID,
 			Token:    token,
 		},
 		Code:    []byte("sensor"),
@@ -55,7 +56,7 @@ func makeLog(msg string, log pb.LoggerClient) {
 	defer cancel()
 	_, err := log.Error(ctx, &pb.LogRequest{
 		Credential: &pb.Credential{
-			DriverID: []byte("teste"),
+			DriverID: selfID,
 			Token:    token,
 		},
 		Message: msg,
@@ -86,7 +87,7 @@ func report(center pb.CenterAPIClient) {
 	// Report Output
 	_, err := center.Report(ctx, &pb.ReportMessage{
 		Credential: &pb.Credential{
-			DriverID: []byte("PMbNixmFx87HsVHS6iAz"),
+			DriverID: selfID,
 			Token:    token,
 		},
 		DeviceCode: []byte("sensor"),
@@ -105,7 +106,7 @@ func getDevs(center pb.CenterAPIClient) {
 
 	// Get Devices
 	r, err := center.GetDevices(ctx, &pb.Credential{
-		DriverID: []byte("PMbNixmFx87HsVHS6iAz"),
+		DriverID: selfID,
 		Token:    token,
 	})
 	if err != nil {
@@ -130,7 +131,7 @@ func delDev(center pb.CenterAPIClient) {
 
 	device := &pb.Device{
 		Credential: &pb.Credential{
-			DriverID: []byte("PMbNixmFx87HsVHS6iAz"),
+			DriverID: selfID,
 			Token:    token,
 		},
 		Code: []byte("sensor"),
@@ -150,7 +151,7 @@ func confirm(center pb.CenterAPIClient, input *pb.InputCommand) {
 
 	conf := &pb.Confirmation{
 		Credential: &pb.Credential{
-			DriverID: []byte("PMbNixmFx87HsVHS6iAz"),
+			DriverID: selfID,
 			Token:    token,
 		},
 		Input: input,
@@ -169,7 +170,7 @@ func poll(center pb.CenterAPIClient) {
 		defer cancel()
 
 		r, err := center.PollRequest(ctx, &pb.Credential{
-			DriverID: []byte("PMbNixmFx87HsVHS6iAz"),
+			DriverID: selfID,
 			Token:    token,
 		})
 		if err != nil {
@@ -193,6 +194,8 @@ func poll(center pb.CenterAPIClient) {
 
 func main() {
 	token = []byte(os.Args[1])
+	selfID = []byte("PMbNixmFx87HsVHS6iAz")
+
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
@@ -202,6 +205,7 @@ func main() {
 
 	log := pb.NewLoggerClient(conn)
 	makeLog("Starting", log)
+
 	center := pb.NewCenterAPIClient(conn)
 	// setDev(center)
 	poll(center)
