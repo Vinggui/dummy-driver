@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -51,18 +50,20 @@ func createDevice() *pb.Device {
 	return device
 }
 
-func makeLog(ctx context.Context, log pb.LoggerClient) {
-	r, err := log.Error(ctx, &pb.LogRequest{
+func makeLog(msg string, log pb.LoggerClient) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	_, err := log.Error(ctx, &pb.LogRequest{
 		Credential: &pb.Credential{
 			DriverID: []byte("teste"),
 			Token:    token,
 		},
-		Message: "UHUUUUl",
+		Message: msg,
 	})
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Server Ans: %v\n", r)
+	// fmt.Printf("Server Ans: %v\n", r)
 }
 
 func setDev(center pb.CenterAPIClient) {
@@ -71,11 +72,11 @@ func setDev(center pb.CenterAPIClient) {
 
 	device := createDevice()
 
-	r, err := center.SetDevice(ctx, device)
+	_, err := center.SetDevice(ctx, device)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Server Ans: %v\n", r)
+	// fmt.Printf("Server Ans: %v\n", r)
 }
 
 func report(center pb.CenterAPIClient) {
@@ -83,7 +84,7 @@ func report(center pb.CenterAPIClient) {
 	defer cancel()
 
 	// Report Output
-	r, err := center.Report(ctx, &pb.ReportMessage{
+	_, err := center.Report(ctx, &pb.ReportMessage{
 		Credential: &pb.Credential{
 			DriverID: []byte("PMbNixmFx87HsVHS6iAz"),
 			Token:    token,
@@ -95,7 +96,7 @@ func report(center pb.CenterAPIClient) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Server Ans: %v\n", r)
+	// fmt.Printf("Server Ans: %v\n", r)
 }
 
 func getDevs(center pb.CenterAPIClient) {
@@ -111,14 +112,15 @@ func getDevs(center pb.CenterAPIClient) {
 		panic(err)
 	}
 	for {
-		dev, err := r.Recv()
+		_, err := r.Recv()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			log.Fatalf("%v.ListFeatures(_) = _, %v", center, err)
+			panic(err)
+			// log.Fatalf("%v.ListFeatures(_) = _, %v", center, err)
 		}
-		log.Println(dev)
+		// log.Println(dev)
 	}
 }
 
@@ -135,11 +137,11 @@ func delDev(center pb.CenterAPIClient) {
 	}
 
 	// Delete Devices
-	r, err := center.DeleteDevice(ctx, device)
+	_, err := center.DeleteDevice(ctx, device)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Server Ans: %v\n", r)
+	// fmt.Printf("Server Ans: %v\n", r)
 }
 
 func confirm(center pb.CenterAPIClient, input *pb.InputCommand) {
@@ -154,11 +156,11 @@ func confirm(center pb.CenterAPIClient, input *pb.InputCommand) {
 		Input: input,
 	}
 
-	r, err := center.Confirm(ctx, conf)
+	_, err := center.Confirm(ctx, conf)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Server Ans: %v\n", r)
+	// fmt.Printf("Server Ans: %v\n", r)
 }
 
 func poll(center pb.CenterAPIClient) {
@@ -184,7 +186,7 @@ func poll(center pb.CenterAPIClient) {
 				log.Fatalf("%v.ListFeatures(_) = _, %v", center, err)
 			}
 			confirm(center, command.Input)
-			log.Println(command)
+			// log.Println(command)
 		}
 	}
 }
@@ -194,11 +196,12 @@ func main() {
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+		panic(err)
 	}
 	defer conn.Close()
 
-	// log := pb.NewLoggerClient(conn)
+	log := pb.NewLoggerClient(conn)
+	makeLog("Starting", log)
 	center := pb.NewCenterAPIClient(conn)
 	// setDev(center)
 	poll(center)
