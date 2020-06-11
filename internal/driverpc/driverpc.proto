@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package driverpc;
+
+option go_package = "github.com/Vinggui/iaut-center/internal/drivers/driverpc";
+
+// The credential struct for communication
+message Credential {
+  bytes driverID = 1;
+  bytes token = 2;
+}
+
+// The greeting service definition.
+service Logger {
+  // Sends a greeting
+  rpc Info (LogRequest) returns (Result) {}
+  rpc Warn (LogRequest) returns (Result) {}
+  rpc Error (LogRequest) returns (Result) {}
+}
+
+// The request message containing the user's name.
+message LogRequest {
+  Credential credential = 1;
+  string message = 2;
+}
+
+// The center API definition.
+service centerAPI {
+  rpc pollRequest (Credential) returns (stream Request) {}
+  rpc confirm (Confirmation) returns (Result) {}
+  rpc report (ReportMessage) returns (Result) {}
+  rpc setDevice (Device) returns (Result) {}
+  rpc getDevices (Credential) returns (stream Device) {}
+  rpc deleteDevice (Device) returns (Result) {}
+}
+
+// The response message from the server to the driver
+message Result {
+  bool status = 1;
+  bytes reference = 2;
+}
+
+// The response message from the driver to the server
+message Confirmation {
+  Credential credential = 1;
+  InputCommand input = 2;
+}
+
+// The command polled from the center
+message Request {
+  enum ReqType {
+    SHUTDOWN = 0;
+    INPUT = 1;
+  }
+  ReqType type = 1;
+  InputCommand input = 2;
+}
+
+// The input type
+message InputCommand {
+  string userName = 1;
+  bytes deviceCode = 2;
+  bytes deviceAddres = 3;
+  bytes inputCode = 4;
+  string value = 5;
+}
+
+// The Device definition
+message Device {
+  Credential credential = 1;
+  bytes code = 2; //A specific code for each device a driver can handle
+  bytes address = 3;
+  string name = 4;
+  string icon = 5;
+  repeated IO inputs = 6;
+  repeated IO outputs = 7;
+}
+
+// The Device's input definition
+message IO {
+  enum IOTypes {
+    TEXT = 0;
+    INT = 1;
+    DOUBLE = 2;
+    BUTTON = 3;
+    SLIDER = 4;
+    COLOR = 5;
+    IMG = 6;
+  }
+  IOTypes type = 1;
+  bytes code = 2;
+  string name = 3;
+  string value = 4;
+  repeated string ranges = 5;
+}
+
+// The report message to the center
+message ReportMessage {
+  Credential credential = 1;
+  bytes deviceCode = 2;
+  bytes outputCode = 3;
+  string value = 4;
+}
